@@ -217,16 +217,25 @@ class System:
         - flux: the total flux observed by the observer.
         '''
 
-    def calculate_forces(): ## May need to be acceleration. ##
+    def get_gravity_at_point(): 
         '''
-        Given an observable object, calculates the resultant total force on the object thorough calling get_direction and
-        subsequently Asteroid.get_forces.
+        The function to be called by the bridge to calculate accelerations on all observable objects. 
+        Proceed as:
+        Shape the inputs to [x, y, z] per observable.
+        Update asteroid position with the coordinates.
+        Calculate acceleration per asteroid in [ax, ay, az] format using Asteroid.get_acceleration per asteroid.
+        Reshape to individual ax, ay, az and return.
 
         Inputs:
-        - observable: an Asteroid class observable object.
+        - eps : a length parameter coming from the gravity solver, dummy variable.
+        - x : the x-coordinates of observables coming from the gravity solver.
+        - y : the y-coordinates of observables coming from the gravity solver.
+        - z : the z-coordinates of observables coming from the gravity solver.
 
         Returns:
-        - forces: the total force vector on the object.
+        - ax: the x-accelerations of all objects.
+        - ay: the y-accelerations of all objects.
+        - az: the z-accelerations of all objects.
         '''
 
 class Asteroid(amuse.lab.Particle):
@@ -236,6 +245,9 @@ class Asteroid(amuse.lab.Particle):
     Inputs:
 
     Variables:
+    (from amuse.lab.Particle)
+    - position : [x, y, z] spatial coordinates of the object.
+
     - tesselations: a list of patches [center, normal, area, temperature, albedo] defining the surface tesselation of the asteroid.
     '''
 
@@ -254,17 +266,17 @@ class Asteroid(amuse.lab.Particle):
         - flux: the total flux observed by the observer.
         '''
     
-    def get_forces():
+    def get_acceleration():
         '''
         Given the direction to and the star in the system, calculates the Yarkovsky (and YORP) forces on the asteroid through iterating over 
-        its own tesselated surface.
+        its own tesselated surface and returns the accelerations per spatial coordinate.
 
         Inputs:
         - star_direction: as defined in System.get_directions.
         - star: as defined in System variables.
         
         Returns:
-        - force: the total force vector on the asteroid.
+        - acceleration: the total acceleration vector [ax, ay, az] on the asteroid.
         '''
     
 
@@ -281,4 +293,6 @@ def Evolve():
 
     Details to be determined, but assembles the n-body and gravity solvers, and assembles the bridge to incorporate the YORP and Yarkovsky
     forces on the system observables. Calls the system method to calculate and store observable fluxes. 
+
+    The bridge coupling should be a hierarchical bridge with coupling between (star + planets) <--> (asteroids) <--> (system).
     '''
