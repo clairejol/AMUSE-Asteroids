@@ -161,7 +161,7 @@ class Sphere(Cube): ## Implemented ##
         Inputs:
 
         Returns:
-        - result: the list of tuples [sphere_patch_area, sphere_patch_normal] for all the patches on the sphere.
+        - result: the list of tuples [sphere_patch_center, sphere_patch_normal, sphere_patch_area] for all the patches on the sphere.
         '''
 
 class System:
