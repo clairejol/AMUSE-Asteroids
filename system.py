@@ -29,9 +29,9 @@ class System:
     - light_curve: the list of all flux calculations stored by calculate_flux for all observables.
     '''
 
-    def __init__(self):
+    def __init__(self, system_info):
         '''
-        Initializes the solar system with all of its objects.
+        Initializes the solar system with all of its objects. Assumes coplanar orbits.
 
         Inputs:
         - config: as defined in the class input.
@@ -39,40 +39,11 @@ class System:
         Returns:
         - System: a system class object.
         '''
-        # minimum is sun, earth/observer, asteroid
-        # properties we would want:
-        # name, mass, radius, sma, orbital phase
-        # make system coplanar
-        system_info = {
-            "stars" : { 
-                "Sun" : {
-                    "name"     : "Sun",
-                    "mass"     : 1 | u.MSun,
-                    "radius"   : 1 | u.RSun,
-                    "semimajor_axis" : 0 | u.au,
-                    "orbital_phase" : 0
-                    # luminosity?
-                    }
-                },
-            
-            "planets" : { 
-                "Earth" : {
-                    "name"     : "Earth",
-                    "mass"     : 1 | u.MEarth,
-                    "radius"   : 1 | u.REarth,
-                    "semimajor_axis" : 1 | u.au,
-                    "orbital_phase" : 0
-                    },
                 
-                "Jupiter" : {
-                    "name"     : "Jupiter",
-                    "mass"     : 1 | u.MJupiter,
-                    "radius"   : 1 | u.RJupiter,
-                    "semimajor_axis" : 5.2 | u.au,
-                    "orbital_phase" : 2
-                    }
-                }
-            }
+        def cart2pol(x, y):
+            rho = np.sqrt(x**2 + y**2)
+            phi = np.arctan2(y, x)
+            return(rho, phi)
         
         def pol2cart(r, phi):
             x = r * np.cos(phi)
@@ -97,53 +68,29 @@ class System:
                                               bodies_info[body]["orbital_phase"])
                 i += 1
         
-        #print("stars:\n",stars)
-        #print("planets\n",planets)
-        
         def relative_orbital_velocity(mass, distance):
             return (c.G*mass/distance).sqrt()
         
-        for planet in [planets[0]]:#planets:
-            print(planet.position)
+        if len(stars) > 1:
+            # does it matter if a single star doesn't have a velocity?
+            for star in stars:
+                norm = (np.linalg.norm(star.position)).in_(u.au)
+                vorb = relative_orbital_velocity(stars.mass.sum(), 
+                                                 star.position.sum())
+                star.vx = -star.y * vorb / norm
+                star.vy =  star.x * vorb / norm
+                star.vz =  star.z * vorb / norm
+            
+        for planet in planets:
+            # this assumes that the system's center of mass is at [0,0,0]
+            norm = (np.linalg.norm(planet.position)).in_(u.au)
             vorb = relative_orbital_velocity(stars.mass.sum()+planet.mass, 
                                              planet.position.sum())
-            print(vorb)
-            print(planet.position)
-            planet.velocity = [-planet.y, planet.x, planet.z]
-            print(planet.velocity)
-            #vec = pol2cart(bodies_info[body]["semimajor_axis"], 
-            #               bodies_info[body]["orbital_phase"]+np.pi/2)
-            #print(vec)
-            #planet.velocity = (0, 1, 0) * vorb
-        #print(planets)
-        '''
-        planets = Particles(2)
-        earth = planets[0]
-        earth.name = "Earth"
-        earth.mass = 1 | u.MEarth
-        earth.position = (1, 0, 0) | u.au
-        vorb = relative_orbital_velocity(stars.mass.sum()+earth.mass, 
-                                         earth.position.sum())
-        earth.velocity = (0, 1, 0) * vorb
-        jupiter = planets[1]
-        jupiter.name = "Jupiter"
-        jupiter.mass = 1 | u.MJupiter
-        jupiter.position = (5.2, 0, 0) | u.au
-        vorb = relative_orbital_velocity(stars.mass.sum()+jupiter.mass, 
-                                         jupiter.position.sum())
-        jupiter.velocity = (0, 1, 0) * vorb
-        
-        
-        asteroids = Particles(1)
-        asteroid = asteroids[0]
-        asteroid.name = "asteroid"
-        asteroid.mass = 7.34767309e+22 | u.kg
-        asteroid.position = (384400, 0, 0) | u.km
-        vorb = relative_orbital_velocity(earth.mass + asteroid.mass, 
-                                         asteroid.position.sum())
-        asteroid.velocity = (0, 1, 0) * vorb
-        '''
-        # merge these categories later, when they get evolved
+                                             # something still feels off with "distance" here 
+            planet.vx = -planet.y * vorb / norm
+            planet.vy =  planet.x * vorb / norm
+            planet.vz =  planet.z * vorb / norm
+        # merge these three categories later, when they get evolved
     
     def get_directions():
         '''
@@ -191,7 +138,38 @@ class System:
         - az: the z-accelerations of all objects.
         '''
 
-system = System()
+
+system_info = {
+    "stars" : { 
+        "Sun" : {
+            "name"     : "Sun",
+            "mass"     : 1 | u.MSun,
+            "radius"   : 1 | u.RSun,
+            "semimajor_axis" : 0 | u.au,
+            "orbital_phase" : 0
+            # luminosity?
+            }
+        },
+    
+    "planets" : { 
+        "Earth" : {
+            "name"     : "Earth",
+            "mass"     : 1 | u.MEarth,
+            "radius"   : 1 | u.REarth,
+            "semimajor_axis" : 1 | u.au,
+            "orbital_phase" : 0
+            },
+        
+        "Jupiter" : {
+            "name"     : "Jupiter",
+            "mass"     : 1 | u.MJupiter,
+            "radius"   : 1 | u.RJupiter,
+            "semimajor_axis" : 5 | u.au,
+            "orbital_phase" : np.pi/6
+            }
+        }
+    }
+system = System(system_info)
 
 
 
