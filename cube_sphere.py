@@ -259,7 +259,11 @@ class Sphere(Cube):
             for patch in patches:
                 patch = np.array(patch)
                 sphere_patch = Sphere.cube2sphere(patch)
-                sphere_patch_normal, sphere_patch_center = self.get_sphere_normals(cube_face = patch, return_centers = True).squeeze()
+                
+                sphere_patch_normal, sphere_patch_center = self.get_sphere_normals(cube_face = patch, return_centers = True)
+                sphere_patch_normal = sphere_patch_normal.squeeze()
+                sphere_patch_center = sphere_patch_center.squeeze()
+
                 sphere_patch_area = polygon_area(sphere_patch, sphere_patch_normal)
                 result.append([sphere_patch_center, sphere_patch_normal, sphere_patch_area])
 
