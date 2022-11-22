@@ -10,6 +10,8 @@ from amuse.units import constants as c
 from amuse.lab import Particles
 import numpy as np
 
+from asteroid import Asteroid
+
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
     phi = np.arctan2(y, x)
@@ -43,11 +45,12 @@ class System:
         Returns:
         - System: a system class object.
         '''
-
         self.stars = Particles(len(system_info["stars"]))
         self.planets = Particles(len(system_info["planets"]))
+        self.asteroids = [Asteroid(system_info["asteroids"]["Bennu"]["radius"])] # temporary solution!
         particle_sets = {"stars" : self.stars, 
-                         "planets" : self.planets}
+                         "planets" : self.planets,
+                         "asteroids" : self.asteroids}
         
         # properties that all bodies have
         for idx in system_info:
@@ -62,16 +65,17 @@ class System:
         def relative_orbital_velocity(mass, distance):
             return (c.G*mass/distance).sqrt()
         
-        if len(self.stars) > 1:
             # does it matter if a single star doesn't have a velocity?
-            for star in self.stars:
+        for star in self.stars:
+            if len(self.stars) > 1:
                 norm = (np.linalg.norm(star.position)).in_(u.au)
                 vorb = relative_orbital_velocity(self.stars.mass.sum(), 
                                                  star.position.sum())
                 star.vx = -star.y * vorb / norm
                 star.vy =  star.x * vorb / norm
                 star.vz =  star.z * vorb / norm
-            
+            star.luminosity = system_info["stars"][star.name]["luminosity"]
+        
         for planet in self.planets:
             # this assumes that the system's center of mass is at [0,0,0]
             norm = (np.linalg.norm(planet.position)).in_(u.au)
@@ -81,36 +85,71 @@ class System:
             planet.vx = -planet.y * vorb / norm
             planet.vy =  planet.x * vorb / norm
             planet.vz =  planet.z * vorb / norm
+        
+        for asteroid in self.asteroids:
+            # this assumes that the system's center of mass is at [0,0,0]
+            # it also is the exact same as for planets, at the moment
+            norm = (np.linalg.norm(asteroid.position)).in_(u.au)
+            vorb = relative_orbital_velocity(self.stars.mass.sum()+asteroid.mass, 
+                                             asteroid.position.sum())
+                                             # something still feels off with "distance" here 
+            asteroid.vx = -asteroid.y * vorb / norm
+            asteroid.vy =  asteroid.x * vorb / norm
+            asteroid.vz =  asteroid.z * vorb / norm
+        
         # merge these three categories later, when they get evolved
+        # should we move them to the center of mass somewhere? do the three need to be merged for that?
+        
+        self.observer = self.planets[0] # assume the first planet in the list is the observer
+        
+        
+        self.calculate_flux(self.asteroids[0])
+        self.get_gravity_at_point()
     
-    def get_directions():
+    def get_directions(self, coord):
         '''
-        Given a coordinate in space, returns the vector direction to the observer and the star in the system.
+        Given a coordinate in space, returns the vector direction to the observer 
+        and the star in the system. Assumes a single star.
         Inputs:
         - coord: an [x, y, z] coordinate in space.
         Returns:
-        - obs_direction: the direction to the observer.
-        - star_direction: the direction to the star. 
+        - obs_direction: the direction to the observer, normalised.
+        - star_direction: the direction to the star, normalised. 
         '''
-        # these should be normalised!
+        try:
+            coord = coord.in_(u.au)
+        except:
+            raise ValueError("The coordinate should have a distance unit.")
+        
+        obs_direction = coord - self.observer.position
+        star_direction = coord - self.stars[0].position
+        return obs_direction / (np.linalg.norm(obs_direction)).in_(u.au), \
+              star_direction / (np.linalg.norm(star_direction)).in_(u.au)
     
-    def calculate_flux():
+    def calculate_flux(self, observable):
         '''
-        Given an observable object, calculates the resultant total flux as observed by the observer thorough calling get_direction
-        and subsequently Asteroid.get_flux. Stores the values in light_curve.
+        Given an observable object, calculates the resultant total flux as 
+        observed by the observer thorough calling get_direction and 
+        subsequently Asteroid.get_flux. Stores the values in light_curve.
         Inputs:
         - observable: an Asteroid class observable object.
         Returns:
         - flux: the total flux observed by the observer.
         '''
+        obs_direction, star_direction = self.get_directions(observable.position)
+        flux = observable.get_flux(obs_direction, star_direction, self.observer, self.stars[0])
+        # currently returns nan, because emissivity in Asteroid is set to 0
+        return flux
+        
 
-    def get_gravity_at_point(): 
+    def get_gravity_at_point(self): 
         '''
         The function to be called by the bridge to calculate accelerations on all observable objects. 
         Proceed as:
         Shape the inputs to [x, y, z] per observable.
         Update asteroid position with the coordinates.
-        Calculate acceleration per asteroid in [ax, ay, az] format using Asteroid.get_acceleration per asteroid.
+        Calculate acceleration per asteroid in [ax, ay, az] format using 
+            Asteroid.get_acceleration per asteroid.
         Reshape to individual ax, ay, az and return.
         Inputs:
         - eps : a length parameter coming from the gravity solver, dummy variable.
@@ -122,7 +161,12 @@ class System:
         - ay: the y-accelerations of all objects.
         - az: the z-accelerations of all objects.
         '''
-
+        observable = self.asteroids[0]
+        obs_direction, star_direction = self.get_directions(observable.position)
+        acc = observable.get_acceleration(star_direction, self.stars[0])
+        # currently returns nan, because emissivity in Asteroid is set to 0
+        print(acc)
+        # take actual gravity into account as well!
 
 system_info = {
     "stars" : { 
@@ -131,9 +175,9 @@ system_info = {
             "mass"     : 1 | u.MSun,
             "radius"   : 1 | u.RSun,
             "semimajor_axis" : 0 | u.au,
-            "orbital_phase" : 0
-            # luminosity?
-            }
+            "orbital_phase" : 0,
+            "luminosity" : 1 | u.LSun,
+            },
         },
     
     "planets" : { 
@@ -142,7 +186,7 @@ system_info = {
             "mass"     : 1 | u.MEarth,
             "radius"   : 1 | u.REarth,
             "semimajor_axis" : 1 | u.au,
-            "orbital_phase" : 0
+            "orbital_phase" : 0,
             },
         
         "Jupiter" : {
@@ -150,8 +194,20 @@ system_info = {
             "mass"     : 1 | u.MJupiter,
             "radius"   : 1 | u.RJupiter,
             "semimajor_axis" : 5 | u.au,
-            "orbital_phase" : np.pi/6
-            }
+            "orbital_phase" : np.pi/6,
+            },
+        
+        },
+    
+    "asteroids" : {
+        "Bennu" : {
+            "name"     : "Bennu",
+            "mass"     : 73e9 | u.kg,
+            "radius"   : 0.24 | u.km,
+            "semimajor_axis" : 1.126 | u.au,
+            "orbital_phase" : np.pi/4,
+            },
         }
     }
 system = System(system_info)
+#print(system.get_directions((.5,.5,0.)|u.au))
