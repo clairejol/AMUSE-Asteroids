@@ -9,7 +9,7 @@ from cube_sphere import Sphere
 
 class Asteroid(Particle):
     '''
-    A modified Particle-class to add extra functionailty for asteroid with tessellated faces.
+    A modified Particle-class to add extra functionality for asteroid with tessellated faces.
     '''
     def __init__(self, radius, definition = 10, key=None, particles_set=None, set_index=None, set_version=-1, **keyword_arguments):
         super().__init__(key, particles_set, set_index, set_version, **keyword_arguments)        
@@ -41,7 +41,7 @@ class Asteroid(Particle):
         '''
         Calculate the acceleration on a given asteroid due to YORP and Yarkovsky forces.
         '''
-        total_force = np.zeros(3)
+        total_force = np.zeros(3) | u.m**-1 * u.kg * u.s**-2 # here too it wanted units
         for patch in self.tessellations:
             #Define the variables. Ugly...
             center = patch[0]
@@ -59,24 +59,25 @@ class Asteroid(Particle):
             incident_flux = star.luminosity / (4*np.pi*star_dist**2)
 
             #Calculate and log the patch temperature.
-            temperature = ((1-albedo)*mu_0*incident_flux)**(1/4)/(emissivity*constants.Stefan_hyphen_Boltzmann_constant)
+            temperature = (((1-albedo)*mu_0*incident_flux)/(emissivity*constants.Stefan_hyphen_Boltzmann_constant))**(1/4)
             patch[3] = temperature
-
+            
             #Calculate the scattering force.
             scattering_force = -(2/3) * (mu_0 * albedo * incident_flux / constants.c) * area * normal
             total_force += scattering_force
 
             #Calculate the thermal force.
-            thermal_force = -(2/3) * (emissivity * constants.Stefan_hyphen_Boltzmann_constant * temperature**4 / constants.c) * area * normal
+            thermal_force = -(2/3) * (emissivity * constants.Stefan_hyphen_Boltzmann_constant \
+                                      * temperature**4 / constants.c) * area * normal
             total_force += thermal_force
-
+            
         return total_force[0]/self.mass, total_force[1]/self.mass, total_force[2]/self.mass 
 
     def get_flux(self, obs_direction, star_direction, observer, star):
         '''
         Calculate the total flux observable from the observer for the asteroid.
         '''
-        total_flux = 0
+        total_flux = 0 | u.m**-2 * u.kg * u.s**-3 # it needs units for the adding of fluxes to work
         for patch in self.tessellations:
             #Define the variables. Ugly...
             center = patch[0]
@@ -85,7 +86,7 @@ class Asteroid(Particle):
             temperature = None
             albedo = patch[4]
             emissivity = patch[5]
-
+            
             #Calculate off-axis factor.
             mu_0 = np.dot(star_direction, normal) 
 
@@ -94,15 +95,15 @@ class Asteroid(Particle):
             incident_flux = star.luminosity / (4*np.pi*star_dist**2)
 
             #Calculate and log the patch temperature.
-            temperature = ((1-albedo)*mu_0*incident_flux)**(1/4)/(emissivity*constants.Stefan_hyphen_Boltzmann_constant)
+            temperature = (((1-albedo)*mu_0*incident_flux)/(emissivity*constants.Stefan_hyphen_Boltzmann_constant))**(1/4)
             patch[3] = temperature
-
+            
             #Calculate the received flux due to re-emitted radiation. 
             obs_dist = np.linalg.norm(observer.position-self.position)
             re_emitted_flux = constants.Stefan_hyphen_Boltzmann_constant * area * temperature**4 / (2*np.pi*obs_dist**2)
             re_emitted_flux = re_emitted_flux * np.dot(obs_direction, normal)
             total_flux += re_emitted_flux
-
+            
             #Define the reflection reception criterion.
             def reflection_reception(v1, v2, observer):
                 observer_size = 2 | u.REarth 
@@ -112,8 +113,8 @@ class Asteroid(Particle):
 
             #Calculate the received flux due to reflected radiation.
             reflected_flux = incident_flux * albedo
-            reflected_direction = star_direction - 2*np.dot(-star_direction*normal)*normal
+            reflected_direction = star_direction - 2*np.dot(-star_direction,normal)*normal # changed * in np.dot to ,
             if reflection_reception(obs_direction, reflected_direction, observer):
                 total_flux += reflected_flux
-
+            
         return total_flux
