@@ -78,6 +78,8 @@ class System:
                 star.vx = -star.y * vorb / norm
                 star.vy =  star.x * vorb / norm
                 star.vz =  star.z * vorb / norm
+            else:
+                star.velocity = (0,0,0) | u.m * u.s**-1
             star.luminosity = system_info["stars"][star.name]["luminosity"]
         
         for planet in self.planets:
@@ -104,6 +106,7 @@ class System:
         # should we move them to the center of mass somewhere? do the three need to be merged for that?
                 
         self.observer = self.planets[0] # assume the first planet in the list is the observer
+        self.observable = self.asteroids[0]
         
         self.calculate_flux(self.asteroids[0])
         self.get_gravity_at_point(0,0,0,0)
@@ -164,9 +167,8 @@ class System:
         - ay: the y-accelerations of all objects.
         - az: the z-accelerations of all objects.
         '''
-        observable = self.asteroids[0]
-        obs_direction, star_direction = self.get_directions(observable.position)
-        acc = observable.get_acceleration(star_direction, self.stars[0])
+        obs_direction, star_direction = self.get_directions(self.observable.position)
+        acc = self.observable.get_acceleration(star_direction, self.stars[0])
         return acc[0], acc[1], acc[2]
         # take actual gravity into account as well!
 

@@ -50,7 +50,10 @@ class Asteroid(Particle):
             temperature = None
             albedo = patch[4]
             emissivity = patch[5]
-
+            print()
+            print("patch center:", np.sign(center))
+            print("patch normal:", np.sign(normal))
+            
             #Calculate off-axis factor.
             mu_0 = np.dot(star_direction, normal)
             if mu_0 < 0:
@@ -69,13 +72,20 @@ class Asteroid(Particle):
             #Calculate the scattering force.
             scattering_force = -(2/3) * (mu_0 * albedo * incident_flux / constants.c) * area * normal
             total_force += scattering_force
-
+            print("scattering_force:",(scattering_force))
+            #print("scattering_force:",np.sign(scattering_force))
+            
             #Calculate the thermal force.
             thermal_force = -(2/3) * (emissivity * constants.Stefan_hyphen_Boltzmann_constant \
                                       * temperature**4 / constants.c) * area * normal
             total_force += thermal_force
+            #print("thermal_force:",np.sign(thermal_force))
+            print("thermal_force:",(thermal_force))
             
-        return total_force[0]/self.mass, total_force[1]/self.mass, total_force[2]/self.mass 
+        return -total_force[0]/self.mass, -total_force[1]/self.mass, -total_force[2]/self.mass 
+               # i put minus signs in front of these by hand, because it puts out 
+               # a force towards the star, not away from it as we expect it to,
+               # but there's probably a better solution
 
     def get_flux(self, obs_direction, star_direction, observer, star):
         '''
