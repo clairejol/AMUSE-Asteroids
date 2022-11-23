@@ -29,30 +29,34 @@ class Asteroid(Particle):
         Either automatically initialize the surface emissivity and albedo, or import them from array.
         '''
         if not albedo_array: 
-            self.tessellations[4] = np.random.randn(len(self.tessellations[4]))
+            self.tessellations[:,4] = np.random.uniform(0,1,len(self.tessellations[:,4]))
         else:
-            self.tessellations[4] = albedo_array   
+            self.tessellations[:,4] = albedo_array   
         if not emissivity_array:
-            self.tessellations[5] = np.array([0.65]*len(self.tessellations[5]))
+            self.tessellations[:,5] = np.array([0.65]*len(self.tessellations[:,5]))
         else:
-            self.tessellations[5] = emissivity_array
+            self.tessellations[:,5] = emissivity_array
 
     def get_acceleration(self, star_direction, star):
         '''
         Calculate the acceleration on a given asteroid due to YORP and Yarkovsky forces.
         '''
-        total_force = np.zeros(3) | u.m**-1 * u.kg * u.s**-2 # here too it wanted units
+        total_force = np.zeros(3) | u.m * u.kg * u.s**-2 # it needs units for the adding to work
         for patch in self.tessellations:
             #Define the variables. Ugly...
             center = patch[0]
             normal = patch[1]
-            area = patch[2]
+            area = patch[2] | u.m**2
             temperature = None
             albedo = patch[4]
             emissivity = patch[5]
 
             #Calculate off-axis factor.
-            mu_0 = np.dot(star_direction, normal)  
+            mu_0 = np.dot(star_direction, normal)
+            if mu_0 < 0:
+                mu_0 = 0
+                # might need different solution if a heated patch rotates out of the sunlight
+                # because the temperature does not instantly go to 0 then
 
             #Calculate incident flux.
             star_dist = np.linalg.norm(star.position-self.position)
@@ -77,12 +81,13 @@ class Asteroid(Particle):
         '''
         Calculate the total flux observable from the observer for the asteroid.
         '''
-        total_flux = 0 | u.m**-2 * u.kg * u.s**-3 # it needs units for the adding of fluxes to work
+        total_flux = 0 | u.kg * u.s**-3 # it needs units for the adding of fluxes to work
+        i = 0
         for patch in self.tessellations:
             #Define the variables. Ugly...
             center = patch[0]
             normal = patch[1]
-            area = patch[2]
+            area = patch[2] | u.m**2
             temperature = None
             albedo = patch[4]
             emissivity = patch[5]
@@ -106,15 +111,16 @@ class Asteroid(Particle):
             
             #Define the reflection reception criterion.
             def reflection_reception(v1, v2, observer):
-                observer_size = 2 | u.REarth 
+                observer_size = 2000 | u.REarth 
                 obs_dist = np.linalg.norm(observer.position-self.position)
                 angle = np.arctan(observer_size/obs_dist)
                 return bool(np.arctan(np.dot(v1, v2)) < angle)
 
             #Calculate the received flux due to reflected radiation.
             reflected_flux = incident_flux * albedo
-            reflected_direction = star_direction - 2*np.dot(-star_direction,normal)*normal # changed * in np.dot to ,
+            reflected_direction = star_direction - 2*np.dot(-star_direction,normal)*normal 
             if reflection_reception(obs_direction, reflected_direction, observer):
+                i+=1
                 total_flux += reflected_flux
-            
+                
         return total_flux

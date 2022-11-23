@@ -12,6 +12,9 @@ import numpy as np
 
 from asteroid import Asteroid
 
+import matplotlib.pyplot as plt
+from amuse.plot import plot, scatter
+
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
     phi = np.arctan2(y, x)
@@ -47,7 +50,8 @@ class System:
         '''
         self.stars = Particles(len(system_info["stars"]))
         self.planets = Particles(len(system_info["planets"]))
-        self.asteroids = [Asteroid(system_info["asteroids"]["Bennu"]["radius"])] # temporary solution!
+        self.asteroids = [Asteroid(system_info["asteroids"]["Bennu"]["radius"])]
+        
         particle_sets = {"stars" : self.stars, 
                          "planets" : self.planets,
                          "asteroids" : self.asteroids}
@@ -96,15 +100,13 @@ class System:
             asteroid.vx = -asteroid.y * vorb / norm
             asteroid.vy =  asteroid.x * vorb / norm
             asteroid.vz =  asteroid.z * vorb / norm
-        
         # merge these three categories later, when they get evolved
         # should we move them to the center of mass somewhere? do the three need to be merged for that?
-        
+                
         self.observer = self.planets[0] # assume the first planet in the list is the observer
         
-        
         self.calculate_flux(self.asteroids[0])
-        self.get_gravity_at_point()
+        self.get_gravity_at_point(0,0,0,0)
     
     def get_directions(self, coord):
         '''
@@ -139,10 +141,11 @@ class System:
         obs_direction, star_direction = self.get_directions(observable.position)
         flux = observable.get_flux(obs_direction, star_direction, self.observer, self.stars[0])
         # currently returns nan, because emissivity in Asteroid is set to 0
+
         return flux
         
 
-    def get_gravity_at_point(self): 
+    def get_gravity_at_point(self, eps, x, y, z): 
         '''
         The function to be called by the bridge to calculate accelerations on all observable objects. 
         Proceed as:
@@ -164,8 +167,7 @@ class System:
         observable = self.asteroids[0]
         obs_direction, star_direction = self.get_directions(observable.position)
         acc = observable.get_acceleration(star_direction, self.stars[0])
-        # currently returns nan, because emissivity in Asteroid is set to 0
-        print(acc)
+        return acc[0], acc[1], acc[2]
         # take actual gravity into account as well!
 
 system_info = {
@@ -209,5 +211,5 @@ system_info = {
             },
         }
     }
-system = System(system_info)
+#system = System(system_info)
 #print(system.get_directions((.5,.5,0.)|u.au))
