@@ -38,18 +38,7 @@ def Evolve(system, timestep):
     ss_gravity_code.particles.add_particles(planet_system)
     ch_g2s = ss_gravity_code.particles.new_channel_to(planet_system)
 
-    asteroid_set = Particles(len(system_info["asteroids"]))
-    #Need the asteroid set to behave as Particles for the evolution; there must be a neater way to do this
-
-    #ast1 = asteroid_set[0]
-    #ast1.name = "Bennu"
-    #ast1.mass = 73e9 | u.kg
-    #ast1.radius = 0.24 | u.km
-    #ast1.semimajor_axis = 1.126 | u.au
-    #ast1.orbital_phase = np.pi/4
-    #ast1.position = pol2cart(ast1.semimajor_axis, ast1.orbital_phase)
-
-    asteroid_sys = asteroid_set
+    asteroid_sys = system.asteroids[0].particles_set
 
     ast_converter = nbody_system.nbody_to_si(asteroid_sys.mass.sum(),
                                        asteroid_sys.position.length())
