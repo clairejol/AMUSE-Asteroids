@@ -1,7 +1,12 @@
-import os 
+'''
+File housing the Asteroid class, a subclass of AMUSE Particle with added functionality.
+Calculates its own YORP and Yarkovsky forces in the System.
+
+@author: nazli
+'''
+
 import numpy as np
-import itertools
-from amuse.lab import Particle, Particles
+from amuse.lab import Particle
 from amuse.lab import constants
 from amuse.units import units as u 
 
@@ -9,7 +14,15 @@ from cube_sphere import Sphere
 
 class Asteroid(Particle):
     '''
-    A modified Particle-class to add extra functionality for asteroid with tessellated faces.
+    A subclass of the AMUSE Particle with added functionality for asteroids.
+
+    Inputs:
+
+    Variables:
+    (from amuse.lab.Particle)
+    - position : [x, y, z] spatial coordinates of the object.
+
+    - tesselations: a list of patches [center, normal, area, temperature, albedo] defining the surface tesselation of the asteroid.
     '''
     def __init__(self, radius, definition = 10, key=None, particles_set=None, set_index=None, set_version=-1, **keyword_arguments):
         super().__init__(key, particles_set, set_index, set_version, **keyword_arguments)        
@@ -27,6 +40,13 @@ class Asteroid(Particle):
     def get_albedo_emissivity(self, albedo_array = None, emissivity_array = None):
         '''
         Either automatically initialize the surface emissivity and albedo, or import them from array.
+
+        Inputs:
+        - albedo_array: an array of albedo values with same length as the number of tessellations. Manual input or auto-generated.
+        - emissivity_array: an array of emissivity values with same length as the number of tessellations. Manual input or auto-generated.
+
+        Returns:
+        None
         '''
         if not albedo_array: 
             self.tessellations[:,4] = np.random.uniform(0,1,len(self.tessellations[:,4]))
@@ -39,9 +59,17 @@ class Asteroid(Particle):
 
     def get_acceleration(self, star_direction, star):
         '''
-        Calculate the acceleration on a given asteroid due to YORP and Yarkovsky forces.
+        Given the direction to and the star in the system, calculates the Yarkovsky (and YORP) forces on the asteroid through iterating over 
+        its own tesselated surface and returns the accelerations per spatial coordinate.
+
+        Inputs:
+        - star_direction: as defined in System.get_directions.
+        - star: as defined in System variables.
+        
+        Returns:
+        - acceleration: the total accelerations ax, ay, az on the asteroid.
         '''
-        total_force = np.zeros(3) | u.m * u.kg * u.s**-2 # it needs units for the adding to work
+        total_force = np.zeros(3) | u.m * u.kg * u.s**-2
         for patch in self.tessellations:
             #Define the variables. Ugly...
             center = patch[0]
@@ -50,16 +78,11 @@ class Asteroid(Particle):
             temperature = None
             albedo = patch[4]
             emissivity = patch[5]
-            print()
-            print("patch center:", np.sign(center))
-            print("patch normal:", np.sign(normal))
             
-            #Calculate off-axis factor.
+            #Calculate off-axis factor. If this number is less than 0, it means the patch is invisible from the star.
             mu_0 = np.dot(star_direction, normal)
             if mu_0 < 0:
                 mu_0 = 0
-                # might need different solution if a heated patch rotates out of the sunlight
-                # because the temperature does not instantly go to 0 then
 
             #Calculate incident flux.
             star_dist = np.linalg.norm(star.position-self.position)
@@ -72,27 +95,37 @@ class Asteroid(Particle):
             #Calculate the scattering force.
             scattering_force = -(2/3) * (mu_0 * albedo * incident_flux / constants.c) * area * normal
             total_force += scattering_force
-            print("scattering_force:",(scattering_force))
-            #print("scattering_force:",np.sign(scattering_force))
-            
+
             #Calculate the thermal force.
             thermal_force = -(2/3) * (emissivity * constants.Stefan_hyphen_Boltzmann_constant \
                                       * temperature**4 / constants.c) * area * normal
             total_force += thermal_force
-            #print("thermal_force:",np.sign(thermal_force))
-            print("thermal_force:",(thermal_force))
+
+            #Return accelerations. Account for the the zero point float.
+            zero_float = 5.45e-14 | u.m * u.s**-2
+            zero = 0 | u.m * u.s**-2
+
+            ax = total_force[0]/self.mass if np.abs(total_force[0]/self.mass) > zero_float else zero 
+            ay = total_force[1]/self.mass if np.abs(total_force[1]/self.mass) > zero_float else zero 
+            az = total_force[2]/self.mass if np.abs(total_force[2]/self.mass) > zero_float else zero 
             
-        return -total_force[0]/self.mass, -total_force[1]/self.mass, -total_force[2]/self.mass 
-               # i put minus signs in front of these by hand, because it puts out 
-               # a force towards the star, not away from it as we expect it to,
-               # but there's probably a better solution
+        return ax, ay, az 
 
     def get_flux(self, obs_direction, star_direction, observer, star):
         '''
-        Calculate the total flux observable from the observer for the asteroid.
+        Given the directions and the observer and star in the system, calculates the flux observed by the observer through iterating 
+        over its own tesselated surface.
+
+        Inputs:
+        - obs_direction: as defined in System.get_directions.
+        - star_direction: as defined in System.get_directions.
+        - observer: as defined in System variables.
+        - star: as defined in System variables.
+
+        Returns:
+        - flux: the total flux observed by the observer.
         '''
-        total_flux = 0 | u.kg * u.s**-3 # it needs units for the adding of fluxes to work
-        i = 0
+        total_flux = 0 | u.kg * u.s**-3 
         for patch in self.tessellations:
             #Define the variables. Ugly...
             center = patch[0]
@@ -102,8 +135,10 @@ class Asteroid(Particle):
             albedo = patch[4]
             emissivity = patch[5]
             
-            #Calculate off-axis factor.
-            mu_0 = np.dot(star_direction, normal) 
+            #Calculate off-axis factor. If this number is less than 0, it means the patch is invisible from the star.
+            mu_0 = np.dot(star_direction, normal)
+            if mu_0 < 0:
+                mu_0 = 0 
 
             #Calculate the incident flux.
             star_dist = np.linalg.norm(star.position-self.position)
@@ -130,7 +165,6 @@ class Asteroid(Particle):
             reflected_flux = incident_flux * albedo
             reflected_direction = star_direction - 2*np.dot(-star_direction,normal)*normal 
             if reflection_reception(obs_direction, reflected_direction, observer):
-                i+=1
                 total_flux += reflected_flux
                 
         return total_flux

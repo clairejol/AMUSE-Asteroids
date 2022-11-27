@@ -182,7 +182,7 @@ class System:
     - light_curve: the list of all flux calculations stored by calculate_flux for all observables.
     '''
 
-    def __init__():
+    def __init__(): ## Implemented ##
         '''
         Initializes the solar system with all of its objects.
 
@@ -193,7 +193,7 @@ class System:
         - System: a system class object.
         '''
     
-    def get_directions():
+    def get_directions(): ## Implemented ##
         '''
         Given a coordinate in space, returns the vector direction to the observer and the star in the system.
 
@@ -205,7 +205,7 @@ class System:
         - star_direction: the direction to the star. 
         '''
     
-    def calculate_flux():
+    def calculate_flux(): ## Implemented ##
         '''
         Given an observable object, calculates the resultant total flux as observed by the observer thorough calling get_direction
         and subsequently Asteroid.get_flux. Stores the values in light_curve.
@@ -238,7 +238,7 @@ class System:
         - az: the z-accelerations of all objects.
         '''
 
-class Asteroid(amuse.lab.Particle):
+class Asteroid(amuse.lab.Particle): ## Implemented ##
     '''
     A subclass of the AMUSE Particle with added functionality for asteroids.
 
@@ -251,7 +251,19 @@ class Asteroid(amuse.lab.Particle):
     - tesselations: a list of patches [center, normal, area, temperature, albedo] defining the surface tesselation of the asteroid.
     '''
 
-    def get_flux():
+    def get_albedo_emissivity(self): ## Implemented ##
+        '''
+        Either automatically initialize the surface emissivity and albedo, or import them from array.
+
+        Inputs:
+        - albedo_array: an array of albedo values with same length as the number of tessellations. Manual input or auto-generated.
+        - emissivity_array: an array of emissivity values with same length as the number of tessellations. Manual input or auto-generated.
+
+        Returns:
+        None
+        '''
+
+    def get_flux(): ## Implemented ##
         '''
         Given the directions and the observer and star in the system, calculates the flux observed by the observer through iterating 
         over its own tesselated surface.
@@ -266,7 +278,7 @@ class Asteroid(amuse.lab.Particle):
         - flux: the total flux observed by the observer.
         '''
     
-    def get_acceleration():
+    def get_acceleration(): ## Implemented ##
         '''
         Given the direction to and the star in the system, calculates the Yarkovsky (and YORP) forces on the asteroid through iterating over 
         its own tesselated surface and returns the accelerations per spatial coordinate.
