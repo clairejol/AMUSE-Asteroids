@@ -1,4 +1,12 @@
+'''
+File housing the Evoluve function to create and evolve a solar system and an asteroid. Creates and manages the bridge between the various codes.
+
+@author: loohuis, nazli
+'''
+
 import numpy as np
+from tqdm import tqdm
+
 from amuse.datamodel import ParticlesSuperset
 from amuse.lab import nbody_system
 from amuse.couple import bridge
@@ -25,7 +33,8 @@ def Evolve(system, timestep, endtime):
     '''
 
     #Build the solar system first.
-    solar_system = ParticlesSuperset([system.stars, system.planets])
+    #solar_system = ParticlesSuperset([system.stars, system.planets])
+    solar_system = system.stars | system.planets
     solar_converter = nbody_system.nbody_to_si(solar_system.mass.sum(), solar_system.position.length())
     
     ss_gravity_code = Hermite(solar_converter)
@@ -40,14 +49,20 @@ def Evolve(system, timestep, endtime):
     ast_gravity_code.particles.add_particles(asteroid_sys)
     ch_gravity2ast = ast_gravity_code.particles.new_channel_to(asteroid_sys)
 
-    bridgey_bridge = bridge.Bridge()
-    bridgey_bridge.add_system(ast_gravity_code, (ss_gravity_code,) )
-    bridgey_bridge.add_code(ast_gravity_code, (system))
+    #Assemble the bridge.
+    bridgey_bridge = bridge.Bridge(use_threading=False)
+    bridgey_bridge.add_system(ss_gravity_code, ())
+    bridgey_bridge.add_system(ast_gravity_code, (ss_gravity_code, system) )
+    bridgey_bridge.add_system(ast_gravity_code, (system,))
     bridgey_bridge.timestep = timestep | u.yr
+
+    #Update the system withe the bridge information.
+    system.ch_gravity2solar = ch_gravity2solar
+    system.ch_gravity2ast = ch_gravity2ast
 
     evolution_times = np.arange(0, endtime, timestep) | u.yr
 
-    for time in evolution_times:
+    for time in tqdm(evolution_times):
         #Evolve the model.
         bridgey_bridge.evolve_model(time)
         
@@ -55,7 +70,10 @@ def Evolve(system, timestep, endtime):
         ch_gravity2solar.copy()
         ch_gravity2ast.copy()
 
-        #Calculate the flux through the system.
+        #Calculate the flux through the system, log positions for plotting.
         system.calculate_flux()
+        system.log_positions()
         
     bridgey_bridge.stop()
+
+    return system

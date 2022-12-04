@@ -37,7 +37,11 @@ class System:
     - asteroids: the list of all Asteroid class objects in the system.
     - observer: the location of the observer in the system.
     - observables: the list of all objects in the asteroids that are to be observed.
+
     - light_curve: the list of all flux calculations stored by calculate_flux for all observables.
+    - acceleration_hist: log of asteroid acceleration due to YORP-Yarkovsky.
+    - semimajor_hist: log of semimajor axis of the asteroid.
+    - position_hist: log of positions of the solar bodies during the simulation.
     '''
 
     def __init__(self, system_info):
@@ -58,8 +62,16 @@ class System:
                          "planets" : self.planets,
                          "asteroids" : self.asteroids}
 
+        self.ch_gravity2ast = None
+        self.ch_gravity2solar = None 
+
         self.light_curve = []
-        
+        self.acceleration_hist = []
+        self.semimajor_hist = []
+        self.position_hist = {"stars" : np.empty((0, 3, len(system_info["stars"]))),
+                              "planets": np.empty((0, 3, len(system_info["planets"]))),
+                              "asteroids": np.empty((0, 3))}
+
         # Update properties that are shared by all bodies.
         for idx in system_info:
             bodies, bodies_info = particle_sets[idx], system_info[idx]
@@ -134,25 +146,42 @@ class System:
         return obs_direction / (np.linalg.norm(obs_direction)).in_(u.au), \
               star_direction / (np.linalg.norm(star_direction)).in_(u.au)
     
-    def calculate_flux(self, observable):
+    def calculate_flux(self):
         '''
         Given an observable object, calculates the resultant total flux as 
-        observed by the observer thorough calling get_direction and 
+        observed by the observer through calling get_direction and 
         subsequently Asteroid.get_flux. Stores the values in light_curve.
 
         Inputs:
-        - observable: an Asteroid class observable object.
 
         Returns:
         '''
-        obs_direction, star_direction = self.get_directions(observable.position)
-        flux = observable.get_flux(obs_direction, star_direction, self.observer, self.stars[0])
+        obs_direction, star_direction = self.get_directions(self.observable.position)
+        flux = self.observable.get_flux(obs_direction, star_direction, self.observer, self.stars[0])
         self.light_curve.append(flux)
 
         return
-        
+    
+    def log_positions(self): #Something funky happening here with appending.
+        '''
+        A function to log the semi-major axis of the asteroid and the positions of all objects during simulation
+        for plotting purposes later.
+        '''
+        ast_sma = self.observable.position.length().number
+        self.semimajor_hist.append(ast_sma)
 
-    def get_gravity_at_point(self, eps, x, y, z): #Major rewrite necessary.
+        self.position_hist["stars"] = np.vstack((self.position_hist["stars"], 
+                            np.array([self.stars.x.number, self.stars.y.number, self.stars.z.number]).reshape(1, 3, len(self.stars))))
+        
+        self.position_hist["planets"] = np.vstack((self.position_hist["planets"], 
+                            np.array([self.planets.x.number, self.planets.y.number, self.planets.z.number]).reshape(1, 3, len(self.planets))))
+
+        self.position_hist["asteroids"] = np.vstack((self.position_hist["asteroids"],
+                                                np.array([self.observable.x.number, self.observable.y.number, self.observable.z.number]).squeeze()))
+
+        return
+
+    def get_gravity_at_point(self, eps, x, y, z): 
         '''
         The function to be called by the bridge to calculate accelerations on all observable objects. 
         Proceed as:
@@ -172,11 +201,14 @@ class System:
         - ay: the y-accelerations of all objects.
         - az: the z-accelerations of all objects.
         '''
-        #Update the location of the position coming from the simulation.
-        self.observable.position = (x, y, z)
+        #Update the location of the system objects with data coming from the simulation.
+        self.ch_gravity2solar.copy()
+        self.ch_gravity2ast.copy()
 
         #Calculate directions and acceleration.
         _, star_direction = self.get_directions(self.observable.position)
         acc = self.observable.get_acceleration(star_direction, self.stars[0])
+
+        self.acceleration_hist.append([acc[0].number, acc[1].number, acc[2].number])
 
         return acc[0], acc[1], acc[2]
