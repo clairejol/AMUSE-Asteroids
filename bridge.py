@@ -33,7 +33,6 @@ def Evolve(system, timestep, endtime):
     '''
 
     #Build the solar system first.
-    #solar_system = ParticlesSuperset([system.stars, system.planets])
     solar_system = system.stars | system.planets
     solar_converter = nbody_system.nbody_to_si(solar_system.mass.sum(), solar_system.position.length())
     

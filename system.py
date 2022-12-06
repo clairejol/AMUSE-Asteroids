@@ -116,8 +116,6 @@ class System:
             asteroid.vx = -asteroid.y * vorb / norm
             asteroid.vy =  asteroid.x * vorb / norm
             asteroid.vz =  asteroid.z * vorb / norm
-        #Merge these three categories later, when they get evolved
-        # should we move them to the center of mass somewhere? do the three need to be merged for that?
         
         #Assume the first planet is the observer by default.
         self.observer = self.planets[0] 
@@ -162,7 +160,7 @@ class System:
 
         return
     
-    def log_positions(self): #Something funky happening here with appending.
+    def log_positions(self):
         '''
         A function to log the semi-major axis of the asteroid and the positions of all objects during simulation
         for plotting purposes later.
@@ -177,7 +175,7 @@ class System:
                             np.array([self.planets.x.number, self.planets.y.number, self.planets.z.number]).reshape(1, 3, len(self.planets))))
 
         self.position_hist["asteroids"] = np.vstack((self.position_hist["asteroids"],
-                                                np.array([self.observable.x.number, self.observable.y.number, self.observable.z.number]).squeeze()))
+                            np.array([self.observable.x.number, self.observable.y.number, self.observable.z.number]).squeeze()))
 
         return
 
