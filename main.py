@@ -23,8 +23,8 @@ def get_config():
     Very crusty function to hold information. Cannot be easily made into a .json because of AMUSE units.
     '''
     experiment_config = {
-        'time step': 0.05,
-        'end time' : 100
+        'time step': 0.1,
+        'end time' : 10
     }
 
     system_config = {
@@ -73,6 +73,9 @@ def get_config():
 
 
 def plots(system, experiment_config):
+    '''
+    Creates good-old matplotlib plots for the simulations.
+    '''
     """___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___"""
     #Start with the position plot.
     fig, (ax_1) = plt.subplots(1,1)
@@ -94,9 +97,9 @@ def plots(system, experiment_config):
     planet_positions = np.array(system.position_hist["planets"])
 
     acceleration_hist = np.array(system.acceleration_hist)
-    acc_x = np.hstack((acceleration_hist[:,0][0], acceleration_hist[:,0][2:-2][::4], acceleration_hist[:,0][-1]))
-    acc_y = np.hstack((acceleration_hist[:,1][0], acceleration_hist[:,1][2:-2][::4], acceleration_hist[:,1][-1]))
-    acc_z = np.hstack((acceleration_hist[:,2][0], acceleration_hist[:,2][2:-2][::4], acceleration_hist[:,2][-1]))
+    acc_x = np.hstack((acceleration_hist[:,0][0], acceleration_hist[:,0][1:-1][::2], acceleration_hist[:,0][-1]))
+    acc_y = np.hstack((acceleration_hist[:,1][0], acceleration_hist[:,1][1:-1][::2], acceleration_hist[:,1][-1]))
+    acc_z = np.hstack((acceleration_hist[:,2][0], acceleration_hist[:,2][1:-1][::2], acceleration_hist[:,2][-1]))
 
     #Plot the asteroid position.
     ax_1.plot(asteroid_position[:,0], asteroid_position[:,1], color = 'grey', linewidth = 3.0, label = system.asteroids[0].name)
@@ -106,7 +109,7 @@ def plots(system, experiment_config):
         ax_1.plot(planet_positions[:,0,i], planet_positions[:,1,i], linewidth = 1.0, label = system.planets[i].name)
 
     #And finally the star.
-    ax_1.scatter(star_position[0,0], star_position[0,1], color='orange', label = system.stars[0].name)
+    ax_1.plot(star_position[:,0], star_position[:,1], color='orange', label = system.stars[0].name)
 
     #Plot the acceleration quivers.
     ax_1.quiver(asteroid_position[:,0], asteroid_position[:,1], acc_x, acc_y, color = 'grey', alpha=.5, label = 'YORP/Yarkovsky Acc.',
@@ -174,6 +177,9 @@ def plots(system, experiment_config):
 
 
 def anim_position_plot(system, experiment_config):
+    '''
+    Animated plot routine for the position.
+    '''
     #Create a blank figure.
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 20, forward=True)
@@ -189,9 +195,9 @@ def anim_position_plot(system, experiment_config):
 
     #Accelerations of the asteroid.
     acceleration_hist = np.array(system.acceleration_hist)
-    acc_x = np.hstack((acceleration_hist[:,0][0], acceleration_hist[:,0][2:-2][::4], acceleration_hist[:,0][-1]))
-    acc_y = np.hstack((acceleration_hist[:,1][0], acceleration_hist[:,1][2:-2][::4], acceleration_hist[:,1][-1]))
-    acc_z = np.hstack((acceleration_hist[:,2][0], acceleration_hist[:,2][2:-2][::4], acceleration_hist[:,2][-1]))
+    acc_x = np.hstack((acceleration_hist[:,0][0], acceleration_hist[:,0][1:-1][::2], acceleration_hist[:,0][-1]))
+    acc_y = np.hstack((acceleration_hist[:,1][0], acceleration_hist[:,1][1:-1][::2], acceleration_hist[:,1][-1]))
+    acc_z = np.hstack((acceleration_hist[:,2][0], acceleration_hist[:,2][1:-1][::2], acceleration_hist[:,2][-1]))
 
     #And the time steps of the simulation.
     times = np.arange(0, experiment_config['end time'], experiment_config['time step'])
@@ -238,7 +244,7 @@ def anim_position_plot(system, experiment_config):
         ax.set_xlim(-2, 2)
         
         #Plot the star's position, independent of frame.
-        ax.scatter(star_position[0,0], star_position[0,1], color='red', label = system.stars[0].name)
+        ax.scatter(star_position[frame,0], star_position[frame,1], color='red', label = system.stars[0].name)
 
         #Plot the planets's positions.
         colors = ['blue', 'orange']
@@ -261,6 +267,9 @@ def anim_position_plot(system, experiment_config):
 
 
 def anim_semimajor_plot(system, experiment_config):
+    '''
+    Animated plot routine for the semi major axis.
+    '''
     #Create a blank figure.
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 10, forward=True)

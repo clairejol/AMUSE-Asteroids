@@ -27,13 +27,14 @@ def Evolve(system, timestep, endtime):
     Returns:
     - system: the evolved system.
 
-    Details to be determined, but assembles the n-body and gravity solvers, and assembles the bridge to incorporate the YORP and Yarkovsky
+    Assembles the n-body and gravity solvers, and assembles the bridge to incorporate the YORP and Yarkovsky
     forces on the system observables. Calls the system method to calculate and store observable fluxes.
     The bridge coupling should be a hierarchical bridge with coupling between (star + planets) <--> (asteroids) <--> (system).
     '''
 
     #Build the solar system first.
     solar_system = system.stars | system.planets
+    solar_system.move_to_center()
     solar_converter = nbody_system.nbody_to_si(solar_system.mass.sum(), solar_system.position.length())
     
     ss_gravity_code = Hermite(solar_converter)
@@ -51,8 +52,7 @@ def Evolve(system, timestep, endtime):
     #Assemble the bridge.
     bridgey_bridge = bridge.Bridge(use_threading=False)
     bridgey_bridge.add_system(ss_gravity_code, ())
-    bridgey_bridge.add_system(ast_gravity_code, (ss_gravity_code, system) )
-    bridgey_bridge.add_system(ast_gravity_code, (system,))
+    bridgey_bridge.add_system(ast_gravity_code, (ss_gravity_code, system))
     bridgey_bridge.timestep = timestep | u.yr
 
     #Update the system withe the bridge information.

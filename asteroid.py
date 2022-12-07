@@ -108,8 +108,10 @@ class Asteroid(Particle):
             ax = total_force[0]/self.mass if np.abs(total_force[0]/self.mass) > zero_float else zero 
             ay = total_force[1]/self.mass if np.abs(total_force[1]/self.mass) > zero_float else zero 
             az = total_force[2]/self.mass if np.abs(total_force[2]/self.mass) > zero_float else zero 
+
+            factor = 1e0 #Debugging tool.
             
-        return ax, ay, az 
+        return factor*ax, factor*ay, factor*az 
 
     def get_flux(self, obs_direction, star_direction, observer, star):
         '''
