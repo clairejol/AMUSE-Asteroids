@@ -12,6 +12,8 @@ import numpy as np
 
 from asteroid import Asteroid
 
+from amuse.ext.orbital_elements import get_orbital_elements_from_binary
+
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
     phi = np.arctan2(y, x)
@@ -55,7 +57,11 @@ class System:
         - System: a system class object.
         '''
         self.stars = Particles(len(system_info["stars"]))
-        self.planets = Particles(len(system_info["planets"]))
+        try:
+            nplanets = len(system_info["planets"])
+        except:
+            nplanets = 0
+        self.planets = Particles(nplanets)
         self.asteroids = [Asteroid(system_info["asteroids"]["Bennu"]["radius"])]
         
         particle_sets = {"stars" : self.stars, 
@@ -68,8 +74,10 @@ class System:
         self.light_curve = []
         self.acceleration_hist = []
         self.semimajor_hist = []
+        self.eccentricity_hist = []
+        self.position_norm = []
         self.position_hist = {"stars" : np.empty((0, 3, len(system_info["stars"]))),
-                              "planets": np.empty((0, 3, len(system_info["planets"]))),
+                              "planets": np.empty((0, 3, nplanets)),
                               "asteroids": np.empty((0, 3))}
 
         # Update properties that are shared by all bodies.
@@ -118,7 +126,10 @@ class System:
             asteroid.vz =  asteroid.z * vorb / norm
         
         #Assume the first planet is the observer by default.
-        self.observer = self.planets[0] 
+        try:
+            self.observer = self.planets[0]
+        except:
+            self.observer = self.stars[0]
         self.observable = self.asteroids[0]
     
     def get_directions(self, coord):
@@ -165,8 +176,10 @@ class System:
         A function to log the semi-major axis of the asteroid and the positions of all objects during simulation
         for plotting purposes later.
         '''
+        #print()
         ast_sma = self.observable.position.length().number
-        self.semimajor_hist.append(ast_sma)
+        #print(ast_sma)
+        self.position_norm.append(ast_sma)
 
         self.position_hist["stars"] = np.vstack((self.position_hist["stars"], 
                             np.array([self.stars.x.number, self.stars.y.number, self.stars.z.number]).reshape(1, 3, len(self.stars))))
@@ -177,6 +190,15 @@ class System:
         self.position_hist["asteroids"] = np.vstack((self.position_hist["asteroids"],
                             np.array([self.observable.x.number, self.observable.y.number, self.observable.z.number]).squeeze()))
 
+        binary = self.stars | self.asteroids[0].particles_set
+        orbital_elements = get_orbital_elements_from_binary(binary, c.G)
+        mass1, mass2, semimajor_axis, eccentricity = orbital_elements[:4]
+        self.semimajor_hist.append(semimajor_axis.number)
+        self.eccentricity_hist.append(eccentricity)
+        # mass1, mass2, semimajor axis, eccentricity,
+        # cosine of true anomaly, cosine of inclination, 
+        # cosine of the longitude of the ascending node,
+        # cosine of the argument of pericenter
         return
 
     def get_gravity_at_point(self, eps, x, y, z): 

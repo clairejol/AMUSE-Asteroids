@@ -9,6 +9,7 @@ import numpy as np
 import os
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.rcParams.update({'font.size': 20})
 import matplotlib.animation as animation
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
@@ -17,14 +18,15 @@ from system import System
 from bridge import Evolve
 
 DATA_DIR = '/home/kutaynazli/Project/Movies'
+DATA_DIR = '/net/vdesk/data2/meijer/SMA/AMUSE-Asteroids-figures'
 
 def get_config(): 
     '''
     Very crusty function to hold information. Cannot be easily made into a .json because of AMUSE units.
     '''
     experiment_config = {
-        'time step': 0.1,
-        'end time' : 10
+        'time step': 0.01,
+        'end time' : 1.5
     }
 
     system_config = {
@@ -40,6 +42,7 @@ def get_config():
             },
         
         "planets" : { 
+            
             "Earth" : {
                 "name"     : "Earth",
                 "mass"     : 1 | u.MEarth,
@@ -109,7 +112,7 @@ def plots(system, experiment_config):
         ax_1.plot(planet_positions[:,0,i], planet_positions[:,1,i], linewidth = 1.0, label = system.planets[i].name)
 
     #And finally the star.
-    ax_1.plot(star_position[:,0], star_position[:,1], color='orange', label = system.stars[0].name)
+    ax_1.scatter(star_position[:,0], star_position[:,1], color='orange', label = system.stars[0].name)
 
     #Plot the acceleration quivers.
     ax_1.quiver(asteroid_position[:,0], asteroid_position[:,1], acc_x, acc_y, color = 'grey', alpha=.5, label = 'YORP/Yarkovsky Acc.',
@@ -122,7 +125,7 @@ def plots(system, experiment_config):
     """___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___o___"""
 
     #Add the semi-major axis plot.
-    fig, (ax_2) = plt.subplots(1,1)
+    fig, (ax_2, ax_2b) = plt.subplots(2,1)
     fig.set_size_inches(20, 10, forward=True)
 
     for item in ([ax_2.title, ax_2.xaxis.label, ax_2.yaxis.label] +
@@ -131,14 +134,25 @@ def plots(system, experiment_config):
     
     ax_2.set_ylabel('Semi-major Axis [AU]')
     ax_2.set_xlabel('Time [years]')
+    
+    ax_2b.set_ylabel('Eccentricity')
+    ax_2b.set_xlabel('Time [years]')
 
     #Manage the semi-major axis data.
     semi_major_axis, ind = np.unique(system.semimajor_hist, return_index = True)
     semi_major_axis = semi_major_axis[np.argsort(ind)]
     times = np.arange(0, experiment_config['end time'], experiment_config['time step'])
 
+    position_norm, ind = np.unique(system.position_norm, return_index = True)
+    position_norm = position_norm[np.argsort(ind)]
+
+    eccentricity, ind = np.unique(system.eccentricity_hist, return_index = True)
+    eccentricity = eccentricity[np.argsort(ind)]
+    
     #Plot.
-    ax_2.plot(times, semi_major_axis, color = 'black', linewidth = 3.0, label = system.asteroids[0].name)
+    ax_2.plot(times, semi_major_axis, color = 'black', linewidth = 3.0, label = "semimajor axis")#system.asteroids[0].name)
+    #ax_2.plot(times, position_norm, color = 'blue', linewidth = 3.0, label = "distance from center")
+    ax_2b.plot(times, eccentricity, color = 'red', linewidth = 3.0, label = "eccentricity")
     
     plt.legend(loc = 'lower left')
     plt.show()
@@ -149,10 +163,6 @@ def plots(system, experiment_config):
     #Add the flux graph.
     fig, (ax_3) = plt.subplots(1,1)
     fig.set_size_inches(20, 10, forward=True)
-
-    for item in ([ax_3.title, ax_3.xaxis.label, ax_3.yaxis.label] +
-             ax_3.get_xticklabels() + ax_3.get_yticklabels()):
-        item.set_fontsize(20)
     
     ax_3.set_ylabel(r'Flux Received from Observer [$W/(m^2)$]')
     ax_3.set_xlabel('Time [years]')
@@ -319,14 +329,14 @@ def main(system_config, experiment_config):
     print('Static plots completed.')
 
     #Make the position plot.
-    print('Creating position plot animation...')
-    anim_position_plot(system, experiment_config)
-    print('Complete.')
+    #print('Creating position plot animation...')
+    #anim_position_plot(system, experiment_config)
+    #print('Complete.')
 
     #Make the semi-major axis plot.
-    print('Creating the semi-major axis plot animation...')
-    anim_semimajor_plot(system, experiment_config)
-    print('Complete.')
+    #print('Creating the semi-major axis plot animation...')
+    #anim_semimajor_plot(system, experiment_config)
+    #print('Complete.')
 
 
 
