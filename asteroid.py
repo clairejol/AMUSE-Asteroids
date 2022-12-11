@@ -49,7 +49,7 @@ class Asteroid(Particle):
         None
         '''
         if not albedo_array: 
-            self.tessellations[:,4] = np.random.uniform(0,1,len(self.tessellations[:,4]))
+            self.tessellations[:,4] = np.full(len(self.tessellations[:,4]), 1) #np.random.uniform(0,1,len(self.tessellations[:,4]))
         else:
             self.tessellations[:,4] = albedo_array   
         if not emissivity_array:
@@ -85,7 +85,7 @@ class Asteroid(Particle):
                 mu_0 = 0
 
             #Calculate incident flux.
-            star_dist = np.linalg.norm(star.position-self.position)
+            star_dist = np.linalg.norm(star.position-self.position) #norm is magnitude
             incident_flux = star.luminosity / (4*np.pi*star_dist**2)
 
             #Calculate and log the patch temperature.
@@ -161,11 +161,11 @@ class Asteroid(Particle):
                 observer_size = 2000 | u.REarth 
                 obs_dist = np.linalg.norm(observer.position-self.position)
                 angle = np.arctan(observer_size/obs_dist)
-                return bool(np.arctan(np.dot(v1, v2)) < angle)
+                return bool(np.arccos(np.dot(v1, v2)) < angle)
 
             #Calculate the received flux due to reflected radiation.
             reflected_flux = incident_flux * albedo
-            reflected_direction = star_direction - 2*np.dot(-star_direction,normal)*normal 
+            reflected_direction = star_direction - 2*np.dot(star_direction,normal)*normal 
             if reflection_reception(obs_direction, reflected_direction, observer):
                 total_flux += reflected_flux
                 
