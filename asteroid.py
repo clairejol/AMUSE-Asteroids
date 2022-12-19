@@ -49,7 +49,7 @@ class Asteroid(Particle):
         None
         '''
         if not albedo_array: 
-            self.tessellations[:,4] = np.full(len(self.tessellations[:,4]), 1) #np.random.uniform(0,1,len(self.tessellations[:,4]))
+            self.tessellations[:,4] = np.full(len(self.tessellations[:,4]), 0.5) #np.random.uniform(0,1,len(self.tessellations[:,4]))
         else:
             self.tessellations[:,4] = albedo_array   
         if not emissivity_array:
@@ -111,7 +111,7 @@ class Asteroid(Particle):
 
             factor = 1e0 #Debugging tool.
             
-        return factor*ax, factor*ay, factor*az 
+        return factor*ax, factor*ay, factor*az
 
     def get_flux(self, obs_direction, star_direction, observer, star):
         '''
@@ -127,6 +127,7 @@ class Asteroid(Particle):
         Returns:
         - flux: the total flux observed by the observer.
         '''
+
         total_flux = 0 | u.kg * u.s**-3 
         for patch in self.tessellations:
             #Define the variables. Ugly...
@@ -164,7 +165,9 @@ class Asteroid(Particle):
                 return bool(np.arccos(np.dot(v1, v2)) < angle)
 
             #Calculate the received flux due to reflected radiation.
-            reflected_flux = incident_flux * albedo
+            incident_obs_flux = (incident_flux*np.pi*self.radius**2) /(4*np.pi*obs_dist**2)
+            
+            reflected_flux = incident_obs_flux * albedo
             reflected_direction = star_direction - 2*np.dot(star_direction,normal)*normal 
             if reflection_reception(obs_direction, reflected_direction, observer):
                 total_flux += reflected_flux

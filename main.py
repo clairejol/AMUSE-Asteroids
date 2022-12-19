@@ -19,6 +19,7 @@ from bridge import Evolve
 
 DATA_DIR = '/home/kutaynazli/Project/Movies'
 DATA_DIR = '/net/vdesk/data2/meijer/SMA/AMUSE-Asteroids-figures'
+DATA_DIR = '/home/cjol/Documents/AMUSE-plots'
 
 def get_config(): 
     '''
@@ -26,7 +27,7 @@ def get_config():
     '''
     experiment_config = {
         'time step': 0.01,
-        'end time' : 1.5
+        'end time' : 10
     }
 
     system_config = {
