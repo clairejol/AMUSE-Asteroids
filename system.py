@@ -166,7 +166,7 @@ class System:
         Returns:
         '''
         obs_direction, star_direction = self.get_directions(self.observable.position)
-        flux = self.observable.get_flux(obs_direction, star_direction, self.observer, self.stars[0])[0]
+        flux = self.observable.get_flux(obs_direction, star_direction, self.observer, self.stars[0])
         self.light_curve.append(flux)
 
         return

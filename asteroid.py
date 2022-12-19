@@ -49,7 +49,7 @@ class Asteroid(Particle):
         None
         '''
         if not albedo_array: 
-            self.tessellations[:,4] = np.full(len(self.tessellations[:,4]), 0.5) #np.random.uniform(0,1,len(self.tessellations[:,4]))
+            self.tessellations[:,4] = np.random.uniform(0,1,len(self.tessellations[:,4]))
         else:
             self.tessellations[:,4] = albedo_array   
         if not emissivity_array:
