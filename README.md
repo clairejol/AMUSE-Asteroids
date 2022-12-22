@@ -2,6 +2,7 @@
 
 Claire Olde Loohuis, Kutay Nazli, and Tünde Meijer
 
+#### Scientific Question: Can we detect, from any point in the solar system, the light curve and orbital variation of an asteroid that is influenced by the YORP and Yarkovsky effects?
 
 For information about the project scope/progression, see ExpectedProgression.pdf, and for an overview of all functions/classes currently being drafted, see CodeOverview.py that defines all code inputs/outputs.
 
