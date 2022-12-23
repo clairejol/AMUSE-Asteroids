@@ -13,7 +13,7 @@ The scripts should be run in the following order:
 4. bridge.py evolves the system by bridging two n-body codes (the asteroids and the rest of the solar system) with the YORP/Yarkovsky field code outlined in asteroid.py. For the sake of efficiency, the YORP/Yarkovsky code affects the asteroids, but no other solar system objects as their masses are too large. Variables calculated at each timestep are stored in the system class.
 5. main.py contains the plotting structure. It produces plots of the position of all solar system bodies using the chosen timestep, as well as the evolutions of the asteroid's semi-major axis and eccentricity and the flux seen by the observer.
 
-For a simple or less time-consuming example of what the result will look like, consider running the bridge.py and main.py codes with a large timestep, but a large enough timescale to be able to see results, such as a 15-year simulation with a timestep of 0.1 years.
+For a simple or less time-consuming example of what the result will look like, consider running the bridge.py and main.py codes with a large timestep, but a large enough timescale to be able to see results, as in example.py.
 
 The Overleaf for the project proposal and report can be found at https://www.overleaf.com/2411473488tkzrntnjvjdc.
 
