@@ -26,8 +26,8 @@ def get_config():
     Very crusty function to hold information. Cannot be easily made into a .json because of AMUSE units.
     '''
     experiment_config = {
-        'time step': 0.1,
-        'end time' : 15
+        'time step': 0.05,
+        'end time' : 10
     }
 
     system_config = {
